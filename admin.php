@@ -2,13 +2,22 @@
 
 require_once 'config.php';
 
-$valid_admin_login = 'admin';
-$valid_admin_pass = 'admin123';
+if (empty($_SERVER['PHP_AUTH_USER']) || empty($_SERVER['PHP_AUTH_PW'])) {
+    send_auth_request();
+}
 
-if (empty($_SERVER['PHP_AUTH_USER']) ||
-    empty($_SERVER['PHP_AUTH_PW']) ||
-    $_SERVER['PHP_AUTH_USER'] != $valid_admin_login ||
-    md5($_SERVER['PHP_AUTH_PW']) != md5($valid_admin_pass)) {
+$login = $_SERVER['PHP_AUTH_USER'];
+$password = $_SERVER['PHP_AUTH_PW'];
+
+$stmt = $pdo->prepare("SELECT * FROM admins WHERE login = ? AND password_hash = MD5(?)");
+$stmt->execute([$login, $password]);
+$admin = $stmt->fetch();
+
+if (!$admin) {
+    send_auth_request();
+}
+
+function send_auth_request() {
     header('HTTP/1.1 401 Unauthorized');
     header('WWW-Authenticate: Basic realm="Admin Panel"');
     print('<h1>401 Требуется авторизация</h1>');
